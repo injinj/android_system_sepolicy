@@ -129,3 +129,41 @@ allow aohp_container_daemon self:packet_socket create_socket_perms_no_ioctl;
 allow aohp_container_daemon tun_device:chr_file rw_file_perms;
 # sysctl: net.ipv4.ip_forward, rp_filter, src_valid_mark (wg-quick) etc.
 allow aohp_container_daemon proc_net_type:file rw_file_perms;
+
+# --- Linux-userland denials seen on real devices (OnePlus 13 dodge enforcing, Fedora template in Cuttlefish) ---
+
+# Audit netlink: libaudit users (sshd, PAM, sudo, su, login) open an AF_NETLINK/NETLINK_AUDIT
+# socket at start-up and get EPERM without this -> sshd drops every interactive session,
+# PAM account checks fail. Same grant as init/logd; removes the need for an LD_PRELOAD
+# libnoaudit.so shim in the container.
+allow aohp_container_daemon self:netlink_audit_socket { create_socket_perms_no_ioctl nlmsg_relay nlmsg_read nlmsg_write };
+
+# /proc reads from ordinary tools: the OpenClaw gateway polls /proc/stat ~1/s (floods logcat
+# with denials), sed/install/ls read /proc/filesystems, python/node read /proc/version,
+# /proc/uptime, /proc/sys/vm/overcommit_memory, uptime/top read /proc/loadavg.
+allow aohp_container_daemon {
+    proc_stat proc_filesystems proc_version proc_uptime proc_overcommit_memory proc_loadavg
+}:file r_file_perms;
+
+# io_uring: libuv (Node) probes io_uring_setup() at start-up (65 anon_inode create denials per
+# gateway start). Standard macro: named type transition to aohp_container_daemon_iouring plus
+# create/map/read/write on it and self:io_uring sqpoll.
+io_uring_use(aohp_container_daemon)
+
+# ioctls on container files beyond the tty set already allowed above:
+#  FICLONE (0x9409, cp --reflink / coreutils install on f2fs), FICLONERANGE (0x940d),
+#  FIDEDUPERANGE (0x94c6) -- the three have no name in public/ioctl_defines, hence numeric;
+#  TCGETS2 (0x542a, glibc tcgetattr via isatty() on a regular file, e.g. ldd),
+#  FS_IOC_GETFLAGS/SETFLAGS (lsattr/chattr), FS_IOC_FIEMAP (filefrag, cp sparse detection).
+allowxperm aohp_container_daemon aohp_container_data_file:file ioctl {
+    0x9409 0x940d 0x94c6 TCGETS2 FS_IOC_GETFLAGS FS_IOC_SETFLAGS FS_IOC_FIEMAP
+};
+
+# sysfs block attributes: dnf/libdnf (Fedora template) reads /sys/block/dm-*/queue/rotational
+# for its disk-space / IO scheduling probe (tcontext sysfs_dm: dir search + file read).
+allow aohp_container_daemon sysfs_dm:dir search;
+allow aohp_container_daemon sysfs_dm:file r_file_perms;
+
+# NOT granted: self:capability sys_ptrace (pgrep -f on a host pid, 4 denials). private/domain.te
+# neverallows sys_ptrace for every domain outside a fixed allowlist (vold, dumpstate, storaged,
+# system_server, ...); pgrep falls back to matching on comm, which is enough for the container.
