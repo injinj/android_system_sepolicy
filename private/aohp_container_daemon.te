@@ -171,10 +171,9 @@ allowxperm aohp_container_daemon aohp_container_data_file:file ioctl {
 allow aohp_container_daemon sysfs_dm:dir search;
 allow aohp_container_daemon sysfs_dm:file r_file_perms;
 
-# Generic sysfs attribute reads: Node's os.cpus()/device-model probes read
-# /sys/devices/system/cpu/.../ and /sys/firmware/devicetree/base/model (tcontext sysfs, "model")
-# once per gateway start - the last AOHP-domain denial left on both phones (build-5/dodge-3).
-allow aohp_container_daemon sysfs:file r_file_perms;
+# NOT granted: generic sysfs:file read (openclaw-gatewa reading an unlabeled sysfs "model" once per
+# gateway start). private/coredomain.te:142 neverallows coredomain access to unlabeled sysfs files
+# (full_treble_only); the file would need its own label in file_contexts first. Harmless, 1/boot.
 
 # NOT granted: self:capability sys_ptrace (pgrep -f on a host pid, 4 denials). private/domain.te
 # neverallows sys_ptrace for every domain outside a fixed allowlist (vold, dumpstate, storaged,
