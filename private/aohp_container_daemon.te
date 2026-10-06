@@ -137,6 +137,13 @@ allow aohp_container_daemon proc_net_type:file rw_file_perms;
 # PAM account checks fail. Same grant as init/logd; removes the need for an LD_PRELOAD
 # libnoaudit.so shim in the container.
 allow aohp_container_daemon self:netlink_audit_socket { create_socket_perms_no_ioctl nlmsg_relay nlmsg_read nlmsg_write };
+# ... and actually *sending* a record (AUDIT_USER_* via audit_log_user_message, which the sshd
+# pty session path and PAM/sudo call) needs CAP_AUDIT_WRITE: the kernel checks
+# netlink_capable(skb, CAP_AUDIT_WRITE) and answers EPERM otherwise, which libaudit treats as
+# fatal ("linux_audit_write_entry failed: Operation not permitted" -> session dropped). The
+# matching rc adds AUDIT_WRITE to the service's capability set; together they retire the
+# LD_PRELOAD libnoaudit.so shim in the container's sshd unit.
+allow aohp_container_daemon self:global_capability_class_set audit_write;
 
 # /proc reads from ordinary tools: the OpenClaw gateway polls /proc/stat ~1/s (floods logcat
 # with denials), sed/install/ls read /proc/filesystems, python/node read /proc/version,
@@ -163,6 +170,11 @@ allowxperm aohp_container_daemon aohp_container_data_file:file ioctl {
 # for its disk-space / IO scheduling probe (tcontext sysfs_dm: dir search + file read).
 allow aohp_container_daemon sysfs_dm:dir search;
 allow aohp_container_daemon sysfs_dm:file r_file_perms;
+
+# Generic sysfs attribute reads: Node's os.cpus()/device-model probes read
+# /sys/devices/system/cpu/.../ and /sys/firmware/devicetree/base/model (tcontext sysfs, "model")
+# once per gateway start - the last AOHP-domain denial left on both phones (build-5/dodge-3).
+allow aohp_container_daemon sysfs:file r_file_perms;
 
 # NOT granted: self:capability sys_ptrace (pgrep -f on a host pid, 4 denials). private/domain.te
 # neverallows sys_ptrace for every domain outside a fixed allowlist (vold, dumpstate, storaged,

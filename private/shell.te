@@ -657,3 +657,9 @@ neverallow {
 # be able to execute such content. Allowing other domains to execute this
 # content would be a privilege escalation vulnerability.
 neverallow { domain -shell } shell_data_file:file no_x_file_perms;
+
+# AOHP: 'ss' (iproute2, in the Debian/Fedora container templates and in the phone's own
+# toybox-less scripts run from adb shell) lists sockets through sock_diag over
+# NETLINK_SOCK_DIAG; without this it is denied in the shell domain and scripts have to parse
+# /proc/net/tcp instead. Read-only socket enumeration, same grant as netdomain's tcpdiag use.
+allow shell self:netlink_tcpdiag_socket { create_socket_perms_no_ioctl nlmsg_read };
