@@ -219,3 +219,6 @@ allow aohp_container_daemon { display_service activity_service package_service }
 allow aohp_container_daemon apex_module_data_file:dir search;
 allow aohp_container_daemon apex_art_data_file:dir r_dir_perms;
 allow aohp_container_daemon apex_art_data_file:file r_file_perms;
+# ART's GC (userfaultfd-based compaction) creates anon_inode:[userfaultfd] and ioctls UFFDIO_API; denied,
+# app_process is SIGKILLed ~80 ms in (build-9 enforcing vs fine permissive; the only denials left).
+userfaultfd_use(aohp_container_daemon)
