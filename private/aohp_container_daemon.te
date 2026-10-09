@@ -222,3 +222,11 @@ allow aohp_container_daemon apex_art_data_file:file r_file_perms;
 # ART's GC (userfaultfd-based compaction) creates anon_inode:[userfaultfd] and ioctls UFFDIO_API; denied,
 # app_process is SIGKILLed ~80 ms in (build-9 enforcing vs fine permissive; the only denials left).
 userfaultfd_use(aohp_container_daemon)
+# ART JIT: memfd:jit-cache (a tmpfs file) must be writable and executable (dual mapping), like zygote.
+type aohp_container_daemon_tmpfs, file_type;
+tmpfs_domain(aohp_container_daemon)
+allow aohp_container_daemon aohp_container_daemon_tmpfs:file execute;
+# ART reads the on-device-signing status and the apex list at startup (dmesg denials on build-10).
+get_prop(aohp_container_daemon, odsign_prop)
+get_prop(aohp_container_daemon, build_attestation_prop)
+allow aohp_container_daemon apex_info_file:file r_file_perms;
