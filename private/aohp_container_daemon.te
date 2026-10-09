@@ -213,6 +213,13 @@ binder_call(aohp_container_daemon, system_server)
 # passing it the window Surface) — the server hands its IBinder to the app via a broadcast. Without
 # this the window shows "Not connected" while X clients render fine (dodge build-13).
 binder_call(untrusted_app_all, aohp_container_daemon)
+# The reply to getXConnection()/getLogcatOutput() carries a ParcelFileDescriptor (a socketpair end and
+# a logcat pipe) created by the server, so the app must be allowed to receive and use fds labelled
+# with the daemon's domain. Without this the kernel fails the binder reply with -EPERM
+# (BR_FAILED_REPLY, surfaces in the app as DeadObjectException) — dodge build-14.
+allow untrusted_app_all aohp_container_daemon:fd use;
+allow untrusted_app_all aohp_container_daemon:unix_stream_socket { read write getattr getopt setopt shutdown };
+allow untrusted_app_all aohp_container_daemon:fifo_file { read write getattr };
 hal_client_domain(aohp_container_daemon, hal_graphics_allocator)
 allow aohp_container_daemon hal_graphics_allocator:fd use;
 allow aohp_container_daemon surfaceflinger_service:service_manager find;
