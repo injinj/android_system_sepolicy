@@ -203,7 +203,7 @@ allow aohp_container_daemon dmabuf_system_heap_device:chr_file r_file_perms;
 allow aohp_container_daemon shell_exec:file rx_file_perms;   # /system/bin/sh -c for HostExec= units
 allow aohp_container_daemon zygote_exec:file rx_file_perms;  # app_process
 allow aohp_container_daemon apk_data_file:dir r_dir_perms;   # CLASSPATH=/data/app/.../base.apk
-allow aohp_container_daemon apk_data_file:file r_file_perms;
+allow aohp_container_daemon apk_data_file:file { r_file_perms execute };  # libXlorie.so is mmap'd straight out of base.apk
 allow aohp_container_daemon dalvikcache_data_file:dir r_dir_perms;
 allow aohp_container_daemon dalvikcache_data_file:file r_file_perms;
 binder_use(aohp_container_daemon)
@@ -235,3 +235,5 @@ allow aohp_container_daemon apex_info_file:file r_file_perms;
 r_dir_file(aohp_container_daemon, vendor_apex_file)
 allow aohp_container_daemon mnt_expand_file:dir getattr;
 get_prop(aohp_container_daemon, qemu_sf_lcd_density_prop)
+# (framework Resources init also stats /vendor/overlay and /odm/overlay; vendor_overlay_file is
+#  neverallowed to coredomain. The failed stat is harmless and stays denied.)
