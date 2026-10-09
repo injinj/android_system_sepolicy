@@ -178,3 +178,13 @@ allow aohp_container_daemon sysfs_dm:file r_file_perms;
 # NOT granted: self:capability sys_ptrace (pgrep -f on a host pid, 4 denials). private/domain.te
 # neverallows sys_ptrace for every domain outside a fixed allowlist (vold, dumpstate, storaged,
 # system_server, ...); pgrep falls back to matching on comm, which is enough for the container.
+
+# GPU for Linux GUI apps inside the env (2026-10-09, GPU scope REPORT.md section 6 block A).
+# /dev/kgsl-3d0 (qcom, OnePlus 13) and /dev/mali0 (gs101, Pixel 6) are gpu_device. Mesa
+# turnip/freedreno open the KGSL node directly from the env; the Pixel's virgl proxy will run in
+# this domain too. Coredomain carries no ioctl xperm filter on gpu_device (gs101 filters
+# appdomain only), so rw_file_perms covers the KGSL/mali ioctl set. sysfs_gpu = mali sysfs
+# attributes (gs101 genfs); the qcom kgsl sysfs model file is already domain-readable.
+allow aohp_container_daemon gpu_device:chr_file rw_file_perms;
+allow aohp_container_daemon gpu_device:dir r_dir_perms;
+allow aohp_container_daemon sysfs_gpu:file r_file_perms;
