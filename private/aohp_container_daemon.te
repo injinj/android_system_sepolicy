@@ -188,3 +188,9 @@ allow aohp_container_daemon sysfs_dm:file r_file_perms;
 allow aohp_container_daemon gpu_device:chr_file rw_file_perms;
 allow aohp_container_daemon gpu_device:dir r_dir_perms;
 allow aohp_container_daemon sysfs_gpu:file r_file_perms;
+# Window buffers for X11/Wayland presentation: Mesa (freedreno on KGSL) allocates the shared
+# buffers it hands to the display server as dma-bufs from /dev/dma_heap/system. Denied on dodge
+# build-6 enforcing: 'kgsl_bo_new_dmabuf: Failed to allocate dma-buf' / avc { read } for name="system"
+# tcontext=dmabuf_system_heap_device:chr_file. Only the system heap; vendor heaps stay denied.
+allow aohp_container_daemon dmabuf_heap_device:dir r_dir_perms;
+allow aohp_container_daemon dmabuf_system_heap_device:chr_file r_file_perms;
