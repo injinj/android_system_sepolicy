@@ -220,6 +220,14 @@ binder_call(untrusted_app_all, aohp_container_daemon)
 allow untrusted_app_all aohp_container_daemon:fd use;
 allow untrusted_app_all aohp_container_daemon:unix_stream_socket { read write getattr getopt setopt shutdown };
 allow untrusted_app_all aohp_container_daemon:fifo_file { read write getattr };
+# Per-frame wakeup: the Termux:X11 app creates a memfd holding a process-shared pthread_cond_t and passes it to
+# the X server over the socketpair (SCM_RIGHTS); the server mmaps it and signals it from lorieRedraw. Receiving an
+# app fd needs fd use and the memfd is appdomain_tmpfs (same grants mediaserver/surfaceflinger have). The denial
+# is dontaudited: enforcing = frames only on surface recreate, permissive = live (dodge build-15). Mirror rule so
+# the app can map the server's shared state/buffer regions.
+allow aohp_container_daemon appdomain:fd use;
+allow aohp_container_daemon appdomain_tmpfs:file { getattr map read write };
+allow untrusted_app_all aohp_container_daemon_tmpfs:file { getattr map read write };
 hal_client_domain(aohp_container_daemon, hal_graphics_allocator)
 allow aohp_container_daemon hal_graphics_allocator:fd use;
 allow aohp_container_daemon surfaceflinger_service:service_manager find;
