@@ -209,6 +209,10 @@ allow aohp_container_daemon dalvikcache_data_file:file r_file_perms;
 binder_use(aohp_container_daemon)
 binder_call(aohp_container_daemon, surfaceflinger)
 binder_call(aohp_container_daemon, system_server)
+# The Termux:X11 Activity calls back into the X server over Binder (ICmdEntryInterface.getXConnection,
+# passing it the window Surface) — the server hands its IBinder to the app via a broadcast. Without
+# this the window shows "Not connected" while X clients render fine (dodge build-13).
+binder_call(untrusted_app_all, aohp_container_daemon)
 hal_client_domain(aohp_container_daemon, hal_graphics_allocator)
 allow aohp_container_daemon hal_graphics_allocator:fd use;
 allow aohp_container_daemon surfaceflinger_service:service_manager find;
