@@ -230,3 +230,8 @@ allow aohp_container_daemon aohp_container_daemon_tmpfs:file execute;
 get_prop(aohp_container_daemon, odsign_prop)
 get_prop(aohp_container_daemon, build_attestation_prop)
 allow aohp_container_daemon apex_info_file:file r_file_perms;
+# ART then stats the apexes listed there (/vendor/apex, like priv_app) and /mnt/expand; the X server
+# reads the display density property (dmesg on build-11 enforcing).
+r_dir_file(aohp_container_daemon, vendor_apex_file)
+allow aohp_container_daemon mnt_expand_file:dir getattr;
+get_prop(aohp_container_daemon, qemu_sf_lcd_density_prop)
