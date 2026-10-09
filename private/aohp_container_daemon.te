@@ -194,3 +194,23 @@ allow aohp_container_daemon sysfs_gpu:file r_file_perms;
 # tcontext=dmabuf_system_heap_device:chr_file. Only the system heap; vendor heaps stay denied.
 allow aohp_container_daemon dmabuf_heap_device:dir r_dir_perms;
 allow aohp_container_daemon dmabuf_system_heap_device:chr_file r_file_perms;
+
+# HostExec= units (aohp-containerd runs the unit on the Android host, no chroot, same domain). First
+# user: the Termux:X11 display server, started as 'app_process ... com.termux.x11.CmdEntryPoint :0'
+# with TMPDIR=<rootfs>/tmp so X clients in the env reach it over /tmp/.X11-unix/X0. It is a native
+# non-app process drawing into a Surface — the same shape as bootanim, so the same grants
+# (measured on dodge build-7 with the server run under this domain, permissive; 2026-10-09).
+allow aohp_container_daemon shell_exec:file rx_file_perms;   # /system/bin/sh -c for HostExec= units
+allow aohp_container_daemon zygote_exec:file rx_file_perms;  # app_process
+allow aohp_container_daemon apk_data_file:dir r_dir_perms;   # CLASSPATH=/data/app/.../base.apk
+allow aohp_container_daemon apk_data_file:file r_file_perms;
+allow aohp_container_daemon dalvikcache_data_file:dir r_dir_perms;
+allow aohp_container_daemon dalvikcache_data_file:file r_file_perms;
+binder_use(aohp_container_daemon)
+binder_call(aohp_container_daemon, surfaceflinger)
+binder_call(aohp_container_daemon, system_server)
+hal_client_domain(aohp_container_daemon, hal_graphics_allocator)
+allow aohp_container_daemon hal_graphics_allocator:fd use;
+allow aohp_container_daemon surfaceflinger_service:service_manager find;
+allow aohp_container_daemon surfaceflinger:unix_stream_socket { read write };
+allow aohp_container_daemon { display_service activity_service package_service }:service_manager find;
