@@ -86,6 +86,11 @@ allow aohp_container_daemon proc:filesystem mount;
 allow aohp_container_daemon devpts:filesystem mount;
 allow aohp_container_daemon sysfs:filesystem mount;
 allow aohp_container_daemon tmpfs:filesystem mount;
+# /dev/shm inside the container is a private tmpfs (POSIX shm_open for wlroots, squeekboard, zink, browsers).
+# Files created there transition to aohp_container_daemon_tmpfs (tmpfs_domain); directories stay tmpfs.
+allow aohp_container_daemon tmpfs:dir create_dir_perms;
+allow aohp_container_daemon tmpfs:file create_file_perms;
+allow aohp_container_daemon tmpfs:filesystem { getattr unmount };
 
 # Read rootfs templates from /system/etc/aohp/rootfs-templates/.
 allow aohp_container_daemon system_file:file r_file_perms;
