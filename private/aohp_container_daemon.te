@@ -91,6 +91,11 @@ allow aohp_container_daemon tmpfs:filesystem mount;
 allow aohp_container_daemon tmpfs:dir create_dir_perms;
 allow aohp_container_daemon tmpfs:file create_file_perms;
 allow aohp_container_daemon tmpfs:filesystem { getattr unmount };
+# ...and the files themselves: tmpfs_domain's type_transition labels them aohp_container_daemon_tmpfs but
+# only grants rw/map on that type, not create/unlink/rename (dodge build-17: shm_open EACCES, AVC { create }
+# tcontext=aohp_container_daemon_tmpfs).
+allow aohp_container_daemon aohp_container_daemon_tmpfs:file create_file_perms;
+allow aohp_container_daemon aohp_container_daemon_tmpfs:dir create_dir_perms;
 
 # Read rootfs templates from /system/etc/aohp/rootfs-templates/.
 allow aohp_container_daemon system_file:file r_file_perms;
